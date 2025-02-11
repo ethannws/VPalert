@@ -15,8 +15,8 @@ This project monitors **Vacancy Poster API subscriptions** and sends **email ale
 
 ### 1️⃣ Clone the Repository
 ```sh
-git clone https://github.com/your-repo/vp_alert.git
-cd vp_alert
+git clone https://github.com/ethannws/VPalert.git
+cd VPalert
 ```
 
 ### 2️⃣ Configure API Credentials & SMTP
