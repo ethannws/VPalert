@@ -1,26 +1,18 @@
-# Vacancy Poster Alert
+# Vacancy Poster Alert System
 
-This project monitors **Vacancy Poster API subscriptions** and sends **email alerts** for accounts with **less than 10 credits remaining**. It runs inside a **Docker container** and supports **scheduled execution** via cron jobs.
+## 📌 Overview
+This script retrieves subscription data from the Vacancy Poster API and sends email alerts to branches and an overall admin if any subscriptions have fewer than **10 credits** remaining.
 
-## 🔹 Features
-✅ Fetches subscription data from Vacancy Poster API  
-✅ Identifies accounts with **low credit balance**  
-✅ Sends **email alerts** via SMTP  
-✅ Securely stores **API credentials** and **SMTP details**  
-✅ Fully configurable via **JSON or environment variables**  
-✅ **Dockerized** for easy deployment  
-✅ Supports **scheduled execution** via cron  
+## ✨ Features
+✅ Fetches subscription data from the Vacancy Poster API.  
+✅ Filters out subscriptions marked as **"NOT USING"**.  
+✅ Matches subscription names to predefined branches.  
+✅ Sends **individual low-credit alerts** to branch-specific email addresses.  
+✅ Sends an **overall report** to an admin email.  
+✅ Allows **anonymous SMTP relay** for email sending.  
 
-## 🔹 Installation & Setup
-
-### 1️⃣ Clone the Repository
-```sh
-git clone https://github.com/ethannws/VPalert.git
-cd VPalert
-```
-
-### 2️⃣ Configure API Credentials & SMTP
-Modify `config.json` with your **API accounts** and **SMTP settings**:
+## 🛠 Configuration
+### `config.json` Example:
 ```json
 {
   "api_accounts": [
@@ -28,28 +20,62 @@ Modify `config.json` with your **API accounts** and **SMTP settings**:
     {"email": "user2@example.com", "password": "password2"}
   ],
   "smtp_server": "smtp.example.com",
-  "smtp_port": 587,
+  "smtp_port": 25,
   "sender_email": "alerts@example.com",
-  "sender_password": "yourpassword",
-  "recipient_email": "recipient@example.com"
+  "sender_password": "",
+  "branch_emails": {
+    "Thorne": "thorne@example.com",
+    "Wait": "wait@example.com",
+    "BranchA": "brancha@example.com",
+    "BranchB": "branchb@example.com"
+  },
+  "overall_report_email": "admin@example.com"
 }
 ```
 
-### 3️⃣ Build & Run with Docker
-```sh
-docker build -t vp_alert .
-docker run --rm -e CONFIG_FILE=/app/config.json vp_alert
+## 🚀 How It Works
+1️⃣ The script retrieves subscription data for each `api_accounts` entry.  
+2️⃣ It cleans the data and extracts relevant subscription details.  
+3️⃣ If a subscription has **fewer than 10 credits** and matches a branch, it is logged for that branch.  
+4️⃣ **Emails are sent:**  
+   - **Branch-specific emails**: Lists low-credit subscriptions for that branch.  
+   - **Admin report**: Lists all low-credit subscriptions across all branches.  
+5️⃣ Emails include a request to **contact support** if credits need to be added or to opt out of reminders for unused job boards.  
+
+## ▶️ Running the Script
+1️⃣ Ensure **Python** is installed.  
+2️⃣ Install dependencies:
+   ```sh
+   pip install requests
+   ```
+3️⃣ Run the script:
+   ```sh
+   python script.py
+   ```
+
+## 📧 Email Message Format
+### **Branch-Specific Alerts:**
+```plaintext
+Subject: Vacancy Poster Low Credit Alert - [Branch Name]
+
+The following subscriptions for [Branch Name] have less than 10 credits remaining:
+- [Subscription Name] - [Remaining Credits]
+
+Please email Support with the amount of credits if any you would like added.
+Additionally, if you do not use any job boards listed, please let Support know so we can prevent further reminders for those boards. Thank you.
 ```
 
-### 4️⃣ Schedule with Cron (Optional)
-To run **every day at 8 AM**, open your crontab:
-```sh
-crontab -e
-```
-Then add this line:
-```sh
-0 8 * * * docker run --rm vp_alert
+### **Overall Report to Admin:**
+```plaintext
+Subject: Vacancy Poster Overall Low Credit Alert
+
+The following subscriptions across all branches have less than 10 credits remaining:
+- [Subscription Name] - [Remaining Credits]
 ```
 
-## 🔹 License
-This project is licensed under the **MIT License**.
+## 🔍 Notes
+- Ensure that the **SMTP server allows anonymous email relay** if using port 25 without authentication.  
+- Verify that the `branch_emails` list covers all expected branch names to **avoid missing alerts**.  
+
+---
+💡 **For further assistance, contact support.**
