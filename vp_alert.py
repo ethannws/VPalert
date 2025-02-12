@@ -38,6 +38,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", config.get("smtp_port", 587)))
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", config.get("sender_email", "alerts@example.com"))
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", config.get("sender_password", ""))
 BRANCH_EMAILS = config.get("branch_emails", {})
+OVERALL_REPORT_EMAIL = config.get("overall_report_email", "admin@example.com")
 
 # Function to clean malformed XML
 def clean_xml(xml_text):
@@ -47,8 +48,9 @@ def clean_xml(xml_text):
     xml_text = re.sub(r"[^\x20-\x7E]", "", xml_text)  
     return xml_text
 
-# Store low-credit subscriptions per branch
+# Store low-credit subscriptions per branch and overall report
 branch_low_credit = {}
+overall_low_credit = []
 
 # Iterate through API accounts
 for account in API_ACCOUNTS:
@@ -79,6 +81,9 @@ for account in API_ACCOUNTS:
         name = subscription.find("name").text
         remaining_str = subscription.find("remaining").text
 
+        if "NOT USING" in name.upper():
+            continue  # Skip subscriptions marked as NOT USING
+
         try:
             remaining = int(remaining_str)
         except ValueError:
@@ -86,6 +91,7 @@ for account in API_ACCOUNTS:
             continue
 
         if remaining < 10:
+            overall_low_credit.append(f"{name} - {remaining} credits left")
             for branch, email in BRANCH_EMAILS.items():
                 if branch.lower() in name.lower():
                     if branch not in branch_low_credit:
@@ -121,5 +127,34 @@ for branch, subscriptions in branch_low_credit.items():
         print(f"Email sent successfully to {recipient_email} for branch {branch}")
     except Exception as e:
         print(f"Failed to send email to {recipient_email} for branch {branch}: {e}")
+
+# Send overall report email
+if overall_low_credit:
+    subject = "Vacancy Poster Overall Low Credit Alert"
+    body = "The following subscriptions across all branches have less than 10 credits remaining:\n\n" + "\n".join(overall_low_credit)
+    
+    msg = MIMEMultipart()
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = OVERALL_REPORT_EMAIL
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body.encode("utf-8", "ignore").decode("utf-8"), "plain"))
+
+    try:
+        print(f"\nSending overall report email to {OVERALL_REPORT_EMAIL}...")
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.ehlo()
+        
+        if SMTP_PORT == 587:
+            server.starttls()
+            server.ehlo()
+        
+        if SENDER_PASSWORD.strip():
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        
+        server.sendmail(SENDER_EMAIL, OVERALL_REPORT_EMAIL, msg.as_string())
+        server.quit()
+        print(f"Email sent successfully to {OVERALL_REPORT_EMAIL}")
+    except Exception as e:
+        print(f"Failed to send email to {OVERALL_REPORT_EMAIL}: {e}")
 
 sys.exit()
