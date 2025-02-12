@@ -10,5 +10,6 @@
   "branch_emails": {
     "BranchA": "brancha@example.com",
     "BranchB": "branchb@example.com"
-  }
+  },
+  "overall_report_email": "admin@example.com"
 }
