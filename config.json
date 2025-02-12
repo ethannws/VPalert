@@ -1,11 +1,14 @@
 {
   "api_accounts": [
     {"email": "user1@example.com", "password": "password1"},
-    {"email": "user2@example.com", "password": "password2"} //add more users as required
+    {"email": "user2@example.com", "password": "password2"}
   ],
   "smtp_server": "smtp.example.com",
-  "smtp_port": 587,
+  "smtp_port": 25,
   "sender_email": "alerts@example.com",
-  "sender_password": "yourpassword",
-  "recipient_email": "recipient@example.com"
+  "sender_password": "",
+  "branch_emails": {
+    "BranchA": "brancha@example.com",
+    "BranchB": "branchb@example.com"
+  }
 }
