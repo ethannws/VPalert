@@ -32,8 +32,6 @@ Modify `config.json` with your **API accounts** and **SMTP settings**:
   "sender_email": "alerts@example.com",
   "sender_password": "",
   "branch_emails": {
-    "Thorne": "thorne@example.com",
-    "Wait": "wait@example.com",
     "BranchA": "brancha@example.com",
     "BranchB": "branchb@example.com"
   },
