@@ -23,7 +23,7 @@ install_if_missing("requests")
 CONFIG_FILE = os.getenv("CONFIG_FILE", "config.json")
 
 try:
-    with open(CONFIG_FILE, "r") as f:
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         config = json.load(f)
 except FileNotFoundError:
     print(f"\u274c ERROR: Configuration file {CONFIG_FILE} not found!")
@@ -56,16 +56,16 @@ for account in API_ACCOUNTS:
     vp_email = account["email"]
     vp_password = account["password"]
 
-    print(f"\n\ud83d\udd04 Checking subscriptions for {vp_email}...")
+    print(f"\nChecking subscriptions for {vp_email}...")
 
     api_url = f"https://api.vacancyposter.com/api.php?apiaction=getsubs&id={vp_email}&pwd={vp_password}"
 
     try:
         response = requests.get(api_url, timeout=10)
         response.raise_for_status()
-        print(f"\u2705 Successfully retrieved data for {vp_email}")
+        print(f"Successfully retrieved data for {vp_email}")
     except requests.exceptions.RequestException as e:
-        print(f"\u274c Failed to retrieve data for {vp_email}: {e}")
+        print(f"Failed to retrieve data for {vp_email}: {e}")
         continue
 
     # Save response for debugging
@@ -78,12 +78,12 @@ for account in API_ACCOUNTS:
     try:
         root = ET.fromstring(cleaned_xml)
     except ET.ParseError as e:
-        print(f"\u274c XML Parsing Error for {vp_email}: {e}")
+        print(f"XML Parsing Error for {vp_email}: {e}")
         continue
 
     # Find low-credit subscriptions
     low_credit_subs = []
-    full_results_output.append(f"\n\ud83d\udccb **Subscription List for {vp_email}:**")
+    full_results_output.append(f"\nSubscription List for {vp_email}:")
 
     for subscription in root.findall("subscription"):
         name = subscription.find("name").text
@@ -92,37 +92,37 @@ for account in API_ACCOUNTS:
         try:
             remaining = int(remaining_str)
         except ValueError:
-            print(f"\u26a0\ufe0f Could not convert remaining credits for {name}: '{remaining_str}'")
+            print(f"Could not convert remaining credits for {name}: '{remaining_str}'")
             continue
 
-        entry = f"   \ud83d\udd39 {name}: {remaining} credits left"
+        entry = f"   {name}: {remaining} credits left"
         full_results_output.append(entry)
 
         if remaining < 10:
             low_credit_subs.append(f"{name} - {remaining} credits left")
 
-    print("\n".join(full_results_output))
+    print("\n".join(full_results_output).encode("utf-8", "ignore").decode("utf-8"))
 
     if low_credit_subs:
-        all_low_credit_subs.append(f"\ud83d\udd39 **{vp_email}**\n" + "\n".join(low_credit_subs))
+        all_low_credit_subs.append(f"{vp_email}\n" + "\n".join(low_credit_subs))
 
 if not all_low_credit_subs:
-    print("\n\u2705 All accounts have sufficient credits.")
+    print("\nAll accounts have sufficient credits.")
     sys.exit()
 
 # Send email
-subject = "\ud83d\udea8 Vacancy Poster Low Credit Alert"
+subject = "Vacancy Poster Low Credit Alert"
 body = "The following accounts have subscriptions with less than 10 credits remaining:\n\n" + "\n\n".join(all_low_credit_subs)
-body += "\n\n\ud83d\udccb Full Subscription List:\n" + "\n".join(full_results_output)
+body += "\n\nFull Subscription List:\n" + "\n".join(full_results_output)
 
 msg = MIMEMultipart()
 msg["From"] = SENDER_EMAIL
 msg["To"] = RECIPIENT_EMAIL
 msg["Subject"] = subject
-msg.attach(MIMEText(body, "plain"))
+msg.attach(MIMEText(body.encode("utf-8", "ignore").decode("utf-8"), "plain"))
 
 try:
-    print(f"\n\ud83d\udce4 Sending email alert to {RECIPIENT_EMAIL} via {SMTP_SERVER}:{SMTP_PORT}...")
+    print(f"\nSending email alert to {RECIPIENT_EMAIL} via {SMTP_SERVER}:{SMTP_PORT}...")
     server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
     server.ehlo()
     
@@ -135,8 +135,8 @@ try:
     
     server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
     server.quit()
-    print(f"\u2705 Email sent successfully to {RECIPIENT_EMAIL}")
+    print(f"Email sent successfully to {RECIPIENT_EMAIL}")
 except Exception as e:
-    print(f"\u274c Failed to send email: {e}")
+    print(f"Failed to send email: {e}")
 
 sys.exit()
