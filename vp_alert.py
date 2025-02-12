@@ -37,7 +37,7 @@ SMTP_SERVER = os.getenv("SMTP_SERVER", config.get("smtp_server", "smtp.example.c
 SMTP_PORT = int(os.getenv("SMTP_PORT", config.get("smtp_port", 587)))
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", config.get("sender_email", "alerts@example.com"))
 SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", config.get("sender_password", ""))
-RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL", config.get("recipient_email", "recipient@example.com"))
+BRANCH_EMAILS = config.get("branch_emails", {})
 
 # Function to clean malformed XML
 def clean_xml(xml_text):
@@ -47,9 +47,8 @@ def clean_xml(xml_text):
     xml_text = re.sub(r"[^\x20-\x7E]", "", xml_text)  
     return xml_text
 
-# Store low-credit subscriptions
-all_low_credit_subs = []
-full_results_output = []
+# Store low-credit subscriptions per branch
+branch_low_credit = {}
 
 # Iterate through API accounts
 for account in API_ACCOUNTS:
@@ -68,11 +67,6 @@ for account in API_ACCOUNTS:
         print(f"Failed to retrieve data for {vp_email}: {e}")
         continue
 
-    # Save response for debugging
-    debug_filename = f"debug_response_{vp_email}.xml"
-    with open(debug_filename, "w", encoding="utf-8") as file:
-        file.write(response.text)
-
     cleaned_xml = clean_xml(response.text)
 
     try:
@@ -80,10 +74,6 @@ for account in API_ACCOUNTS:
     except ET.ParseError as e:
         print(f"XML Parsing Error for {vp_email}: {e}")
         continue
-
-    # Find low-credit subscriptions
-    low_credit_subs = []
-    full_results_output.append(f"\nSubscription List for {vp_email}:")
 
     for subscription in root.findall("subscription"):
         name = subscription.find("name").text
@@ -95,48 +85,41 @@ for account in API_ACCOUNTS:
             print(f"Could not convert remaining credits for {name}: '{remaining_str}'")
             continue
 
-        entry = f"   {name}: {remaining} credits left"
-        full_results_output.append(entry)
-
         if remaining < 10:
-            low_credit_subs.append(f"{name} - {remaining} credits left")
+            for branch, email in BRANCH_EMAILS.items():
+                if branch.lower() in name.lower():
+                    if branch not in branch_low_credit:
+                        branch_low_credit[branch] = []
+                    branch_low_credit[branch].append(f"{name} - {remaining} credits left")
 
-    print("\n".join(full_results_output).encode("utf-8", "ignore").decode("utf-8"))
-
-    if low_credit_subs:
-        all_low_credit_subs.append(f"{vp_email}\n" + "\n".join(low_credit_subs))
-
-if not all_low_credit_subs:
-    print("\nAll accounts have sufficient credits.")
-    sys.exit()
-
-# Send email
-subject = "Vacancy Poster Low Credit Alert"
-body = "The following accounts have subscriptions with less than 10 credits remaining:\n\n" + "\n\n".join(all_low_credit_subs)
-body += "\n\nFull Subscription List:\n" + "\n".join(full_results_output)
-
-msg = MIMEMultipart()
-msg["From"] = SENDER_EMAIL
-msg["To"] = RECIPIENT_EMAIL
-msg["Subject"] = subject
-msg.attach(MIMEText(body.encode("utf-8", "ignore").decode("utf-8"), "plain"))
-
-try:
-    print(f"\nSending email alert to {RECIPIENT_EMAIL} via {SMTP_SERVER}:{SMTP_PORT}...")
-    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-    server.ehlo()
+# Send an email to each branch
+for branch, subscriptions in branch_low_credit.items():
+    recipient_email = BRANCH_EMAILS[branch]
+    subject = f"Vacancy Poster Low Credit Alert - {branch}"
+    body = f"The following subscriptions for {branch} have less than 10 credits remaining:\n\n" + "\n".join(subscriptions)
     
-    if SMTP_PORT == 587:
-        server.starttls()
+    msg = MIMEMultipart()
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = recipient_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body.encode("utf-8", "ignore").decode("utf-8"), "plain"))
+
+    try:
+        print(f"\nSending email alert to {recipient_email} for branch {branch}...")
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.ehlo()
-    
-    if SENDER_PASSWORD.strip():
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-    
-    server.sendmail(SENDER_EMAIL, RECIPIENT_EMAIL, msg.as_string())
-    server.quit()
-    print(f"Email sent successfully to {RECIPIENT_EMAIL}")
-except Exception as e:
-    print(f"Failed to send email: {e}")
+        
+        if SMTP_PORT == 587:
+            server.starttls()
+            server.ehlo()
+        
+        if SENDER_PASSWORD.strip():
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        
+        server.sendmail(SENDER_EMAIL, recipient_email, msg.as_string())
+        server.quit()
+        print(f"Email sent successfully to {recipient_email} for branch {branch}")
+    except Exception as e:
+        print(f"Failed to send email to {recipient_email} for branch {branch}: {e}")
 
 sys.exit()
