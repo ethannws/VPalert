@@ -1,19 +1,26 @@
-# Vacancy Poster Alert System
+# Vacancy Poster Alert
 
-## 📌 Overview
-This script retrieves subscription data from the Vacancy Poster API and sends email alerts to branches and an overall admin if any subscriptions have fewer than **10 credits** remaining. The script is designed to be **Dockerized** and run on a **cron schedule** for automation.
+This project monitors **Vacancy Poster API subscriptions** and sends **email alerts** for accounts with **less than 10 credits remaining**. It runs inside a **Docker container** and supports **scheduled execution** via cron jobs.
 
-## ✨ Features
-✅ Fetches subscription data from the Vacancy Poster API.  
-✅ Filters out subscriptions marked as **"NOT USING"**.  
-✅ Matches subscription names to predefined branches.  
-✅ Sends **individual low-credit alerts** to branch-specific email addresses.  
-✅ Sends an **overall report** to an admin email.  
-✅ Allows **anonymous SMTP relay** for email sending.  
-✅ Runs on **Docker** with scheduled execution via **cron**.  
+## 🔹 Features
+✅ Fetches subscription data from Vacancy Poster API  
+✅ Identifies accounts with **low credit balance**  
+✅ Sends **email alerts** via SMTP  
+✅ Securely stores **API credentials** and **SMTP details**  
+✅ Fully configurable via **JSON or environment variables**  
+✅ **Dockerized** for easy deployment  
+✅ Supports **scheduled execution** via cron  
 
-## 🛠 Configuration
-### `config.json` Example:
+## 🔹 Installation & Setup
+
+### 1️⃣ Clone the Repository
+```sh
+git clone https://github.com/ethannws/VPalert.git
+cd VPalert
+```
+
+### 2️⃣ Configure API Credentials & SMTP
+Modify `config.json` with your **API accounts** and **SMTP settings**:
 ```json
 {
   "api_accounts": [
@@ -34,33 +41,21 @@ This script retrieves subscription data from the Vacancy Poster API and sends em
 }
 ```
 
-## 🚀 How It Works
-1️⃣ The script retrieves subscription data for each `api_accounts` entry.  
-2️⃣ It cleans the data and extracts relevant subscription details.  
-3️⃣ If a subscription has **fewer than 10 credits** and matches a branch, it is logged for that branch.  
-4️⃣ **Emails are sent:**  
-   - **Branch-specific emails**: Lists low-credit subscriptions for that branch.  
-   - **Admin report**: Lists all low-credit subscriptions across all branches.  
-5️⃣ Emails include a request to **contact support** if credits need to be added or to opt out of reminders for unused job boards.  
-6️⃣ **Runs on Docker** and executes via **cron** for scheduled execution.  
-
-## ▶️ Running the Script via Docker
-### **Build the Docker Image:**
+### 3️⃣ Build & Run with Docker
 ```sh
-docker build -t vpalert .
+docker build -t vp_alert .
+docker run --rm -e CONFIG_FILE=/app/config.json vp_alert
 ```
 
-### **Run the Container Manually:**
+### 4️⃣ Schedule with Cron (Optional)
+To run **every day at 8 AM**, open your crontab:
 ```sh
-docker run --rm vpalert
+crontab -e
 ```
-
-### **Set Up a Cron Job (Automated Execution)**
-Create a `crontab` entry to run the script daily:
+Then add this line:
 ```sh
-0 9 * * * docker run --rm vpalert
+0 8 * * * docker run --rm vp_alert
 ```
-This will run the script every day at **9 AM**.
 
 ## 📧 Email Message Format
 ### **Branch-Specific Alerts:**
@@ -87,5 +82,5 @@ The following subscriptions across all branches have less than 10 credits remain
 - Verify that the `branch_emails` list covers all expected branch names to **avoid missing alerts**.  
 - The **Docker container** is designed to be run as a scheduled job using **cron** or a similar scheduling system.  
 
----
-
+## 🔹 License
+This project is licensed under the **MIT License**.
