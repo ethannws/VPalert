@@ -88,5 +88,4 @@ The following subscriptions across all branches have less than 10 credits remain
 - The **Docker container** is designed to be run as a scheduled job using **cron** or a similar scheduling system.  
 
 ---
-💡 **For further assistance, contact support.**
 
