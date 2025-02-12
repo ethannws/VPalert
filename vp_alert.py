@@ -102,7 +102,11 @@ for account in API_ACCOUNTS:
 for branch, subscriptions in branch_low_credit.items():
     recipient_email = BRANCH_EMAILS[branch]
     subject = f"Vacancy Poster Low Credit Alert - {branch}"
-    body = f"The following subscriptions for {branch} have less than 10 credits remaining:\n\n" + "\n".join(subscriptions)
+    body = (f"The following subscriptions for {branch} have less than 10 credits remaining:\n\n"
+            + "\n".join(subscriptions) +
+            "\n\nPlease email Support with the amount of credits if any you would like added. "
+            "Additionally, if you do not use any job boards listed, please let Support know so we can "
+            "prevent further reminders for those boards. Thank you.")
     
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
@@ -127,34 +131,5 @@ for branch, subscriptions in branch_low_credit.items():
         print(f"Email sent successfully to {recipient_email} for branch {branch}")
     except Exception as e:
         print(f"Failed to send email to {recipient_email} for branch {branch}: {e}")
-
-# Send overall report email
-if overall_low_credit:
-    subject = "Vacancy Poster Overall Low Credit Alert"
-    body = "The following subscriptions across all branches have less than 10 credits remaining:\n\n" + "\n".join(overall_low_credit)
-    
-    msg = MIMEMultipart()
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = OVERALL_REPORT_EMAIL
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body.encode("utf-8", "ignore").decode("utf-8"), "plain"))
-
-    try:
-        print(f"\nSending overall report email to {OVERALL_REPORT_EMAIL}...")
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.ehlo()
-        
-        if SMTP_PORT == 587:
-            server.starttls()
-            server.ehlo()
-        
-        if SENDER_PASSWORD.strip():
-            server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        
-        server.sendmail(SENDER_EMAIL, OVERALL_REPORT_EMAIL, msg.as_string())
-        server.quit()
-        print(f"Email sent successfully to {OVERALL_REPORT_EMAIL}")
-    except Exception as e:
-        print(f"Failed to send email to {OVERALL_REPORT_EMAIL}: {e}")
 
 sys.exit()
